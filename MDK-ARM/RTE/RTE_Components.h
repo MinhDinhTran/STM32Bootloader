@@ -3,8 +3,8 @@
  * Auto generated Run-Time-Environment Component Configuration File
  *      *** Do not modify ! ***
  *
- * Project: 'L4Bootloader' 
- * Target:  'L4Bootloader' 
+ * Project: 'STM32Bootloader' 
+ * Target:  'STM32Bootloader' 
  */
 
 #ifndef RTE_COMPONENTS_H
