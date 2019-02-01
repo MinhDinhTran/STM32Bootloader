@@ -40,12 +40,14 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "usb_device.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <stdarg.h>
 #include <string.h>
 #include <stdint.h>
+#include "usbd_cdc.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -97,6 +99,20 @@ void printmsg(char *format, ...)
     va_end(args);
 #endif
 }
+void Send_Data_to_USB(int16_t *Value_DAT)
+{
+  int8_t dataOut[256];
+
+  if (((USBD_CDC_HandleTypeDef *)(hUsbDeviceFS.pClassData))->TxState == 0)
+  {
+
+    sprintf(dataOut, "Gyr -> GYR_X: %d, GYR_Y: %d, GYR_Z: %d \n\r", Value_DAT[0], Value_DAT[1], Value_DAT[2]);
+    /* Transmiting data to USB over CDC interface */
+    /* (Browse through usbd_cdc_if.c file for the correct function to use */
+    CDC_Transmit_FS(dataOut, strlen(dataOut));
+  }
+}
+int16_t buffer[3] = {0};
 /* USER CODE END 0 */
 
 /**
@@ -129,6 +145,7 @@ int main(void)
   MX_GPIO_Init();
   MX_CRC_Init();
   MX_USART2_UART_Init();
+  MX_USB_DEVICE_Init();
   /* USER CODE BEGIN 2 */
 
   /* USER CODE END 2 */
@@ -141,8 +158,13 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
 			HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_1);	//Thuc hien chop tat led tai 2 chan la PB12 va PB13 noi voi LED
-		  HAL_Delay(1000); // Delay
+		  
 		  printmsg("BL_DEBUG_MSG:Button is pressed .. going to BL mode\n\r");
+		      buffer[0]++;
+    buffer[1]++;
+    buffer[2]++;
+    Send_Data_to_USB(buffer);
+	HAL_Delay(1000); // Delay
 			
   }
   /* USER CODE END 3 */
@@ -156,6 +178,7 @@ void SystemClock_Config(void)
 {
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
   RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
+  RCC_PeriphCLKInitTypeDef PeriphClkInit = {0};
 
   /**Initializes the CPU, AHB and APB busses clocks 
   */
@@ -180,6 +203,12 @@ void SystemClock_Config(void)
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 
   if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_USB;
+  PeriphClkInit.UsbClockSelection = RCC_USBCLKSOURCE_PLL;
+  if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
   {
     Error_Handler();
   }
