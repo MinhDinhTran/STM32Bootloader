@@ -71,7 +71,7 @@ CRC_HandleTypeDef hcrc;
 UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
-
+uint8_t bl_version = 10;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -89,30 +89,24 @@ static void printmsg(char *format, ...);
 void printmsg(char *format, ...)
 {
 #ifdef BL_DEBUG_MSG_EN
-    char str[80];
+  char str[80];
 
-    /*Extract the the argument list using VA apis */
-    va_list args;
-    va_start(args, format);
-    vsprintf(str, format, args);
-    HAL_UART_Transmit(D_UART, (uint8_t *)str, strlen(str), HAL_MAX_DELAY);
-    va_end(args);
-#endif
-}
-void Send_Data_to_USB(int16_t *Value_DAT)
-{
-  int8_t dataOut[256];
-
+  /*Extract the the argument list using VA apis */
+  va_list args;
+  va_start(args, format);
+  vsprintf(str, format, args);
+  // HAL_UART_Transmit(D_UART, (uint8_t *)str, strlen(str), HAL_MAX_DELAY);
   if (((USBD_CDC_HandleTypeDef *)(hUsbDeviceFS.pClassData))->TxState == 0)
   {
-
-    sprintf(dataOut, "Gyr -> GYR_X: %d, GYR_Y: %d, GYR_Z: %d \n\r", Value_DAT[0], Value_DAT[1], Value_DAT[2]);
     /* Transmiting data to USB over CDC interface */
     /* (Browse through usbd_cdc_if.c file for the correct function to use */
-    CDC_Transmit_FS(dataOut, strlen(dataOut));
+    /* uint8_t CDC_Transmit_FS(uint8_t* Buf, uint16_t Len) */
+    CDC_Transmit_FS((uint8_t *)str, strlen(str));
   }
+  va_end(args);
+#endif
 }
-int16_t buffer[3] = {0};
+
 /* USER CODE END 0 */
 
 /**
@@ -157,15 +151,23 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-			HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_1);	//Thuc hien chop tat led tai 2 chan la PB12 va PB13 noi voi LED
-		  
-		  printmsg("BL_DEBUG_MSG:Button is pressed .. going to BL mode\n\r");
-		      buffer[0]++;
-    buffer[1]++;
-    buffer[2]++;
-    Send_Data_to_USB(buffer);
-	HAL_Delay(1000); // Delay
-			
+    /* Lets check whether button is pressed or not, if not pressed jump to user application */
+    if (HAL_GPIO_ReadPin(B1_GPIO_Port, B1_Pin) == GPIO_PIN_RESET)
+    {
+      printmsg("BL_DEBUG_MSG:Button is pressed .. going to BL mode\n\r");
+      HAL_Delay(1000);
+
+      //we should continue in bootloader mode
+      // bootloader_uart_read_data();
+    }
+    else
+    {
+      printmsg("BL_DEBUG_MSG:Button is not pressed .. executing user app\n\r");
+      printmsg("BL_DEBUG_MSG:BL_VER : %d %#x\n\r", bl_version, bl_version);
+      HAL_Delay(1000);
+      // jump to user application
+      // bootloader_jump_to_user_app();
+    }
   }
   /* USER CODE END 3 */
 }
@@ -195,8 +197,7 @@ void SystemClock_Config(void)
   }
   /**Initializes the CPU, AHB and APB busses clocks 
   */
-  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
-                              |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
+  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
@@ -237,7 +238,6 @@ static void MX_CRC_Init(void)
   /* USER CODE BEGIN CRC_Init 2 */
 
   /* USER CODE END CRC_Init 2 */
-
 }
 
 /**
@@ -270,7 +270,6 @@ static void MX_USART2_UART_Init(void)
   /* USER CODE BEGIN USART2_Init 2 */
 
   /* USER CODE END USART2_Init 2 */
-
 }
 
 /**
@@ -300,7 +299,6 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-
 }
 
 /* USER CODE BEGIN 4 */
@@ -319,7 +317,7 @@ void Error_Handler(void)
   /* USER CODE END Error_Handler_Debug */
 }
 
-#ifdef  USE_FULL_ASSERT
+#ifdef USE_FULL_ASSERT
 /**
   * @brief  Reports the name of the source file and the source line number
   *         where the assert_param error has occurred.
@@ -328,7 +326,7 @@ void Error_Handler(void)
   * @retval None
   */
 void assert_failed(uint8_t *file, uint32_t line)
-{ 
+{
   /* USER CODE BEGIN 6 */
   /* User can add his own implementation to report the file name and line number,
      tex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */

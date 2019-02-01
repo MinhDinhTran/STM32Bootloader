@@ -62,7 +62,8 @@ extern "C" {
 
 /* Exported constants --------------------------------------------------------*/
 /* USER CODE BEGIN EC */
-
+#define B1_Pin       GPIO_PIN_8
+#define B1_GPIO_Port GPIOA
 /* USER CODE END EC */
 
 /* Exported macro ------------------------------------------------------------*/
