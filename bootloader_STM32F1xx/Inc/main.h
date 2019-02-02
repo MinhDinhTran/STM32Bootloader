@@ -170,13 +170,13 @@ extern "C"
 
 /*Some Start and End addresses of different memories of STM32F446xx MCU */
 /*Change this according to your MCU */
-#define SRAM1_SIZE 112 * 1024 // STM32F446RE has 112KB of SRAM1
-#define SRAM1_END (SRAM1_BASE + SRAM1_SIZE)
-#define SRAM2_SIZE 16 * 1024 // STM32F446RE has 16KB of SRAM2
-#define SRAM2_END (SRAM2_BASE + SRAM2_SIZE)
-#define FLASH_SIZE 512 * 1024 // STM32F446RE has 512KB of SRAM2
-#define BKPSRAM_SIZE 4 * 1024 // STM32F446RE has 4KB of SRAM2
-#define BKPSRAM_END (BKPSRAM_BASE + BKPSRAM_SIZE)
+#define SRAM_SIZE 64 * 1024 // STM32F103VC has 64KB of SRAM
+#define SRAM_END (SRAM_BASE + SRAM_SIZE)
+// #define SRAM2_SIZE 16 * 1024 // STM32F446RE has 16KB of SRAM2
+// #define SRAM2_END (SRAM2_BASE + SRAM2_SIZE)
+#define FLASH_SIZE 256 * 1024 // STM32F103VC has 256KB of FLASH memory size
+  // #define BKPSRAM_SIZE 4 * 1024 // STM32F446RE has 4KB of SRAM2
+  // #define BKPSRAM_END (BKPSRAM_BASE + BKPSRAM_SIZE)
   /* USER CODE END EFP */
 
   /* Private defines -----------------------------------------------------------*/
