@@ -57,7 +57,8 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define D_UART &huart2
+#define C_UART &huart2
+#define BL_RX_LEN 200
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -72,6 +73,17 @@ UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
 uint8_t bl_version = 10;
+uint8_t bl_rx_buffer[BL_RX_LEN];
+uint8_t supported_commands[] = {
+    BL_GET_VER,
+    BL_GET_HELP,
+    BL_GET_CID,
+    BL_GET_RDP_STATUS,
+    BL_GO_TO_ADDR,
+    BL_FLASH_ERASE,
+    BL_MEM_WRITE,
+    BL_READ_SECTOR_P_STATUS};
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -95,7 +107,7 @@ void printmsg(char *format, ...)
   va_list args;
   va_start(args, format);
   vsprintf(str, format, args);
-  // HAL_UART_Transmit(D_UART, (uint8_t *)str, strlen(str), HAL_MAX_DELAY);
+  // HAL_UART_Transmit(C_UART, (uint8_t *)str, strlen(str), HAL_MAX_DELAY);
   if (((USBD_CDC_HandleTypeDef *)(hUsbDeviceFS.pClassData))->TxState == 0)
   {
     /* Transmiting data to USB over CDC interface */
@@ -158,12 +170,12 @@ int main(void)
       HAL_Delay(1000);
 
       //we should continue in bootloader mode
-      // bootloader_uart_read_data();
+      bootloader_uart_read_data();
     }
     else
     {
       printmsg("BL_DEBUG_MSG:Button is not pressed .. executing user app\n\r");
-      printmsg("BL_DEBUG_MSG:BL_VER : %d %#x\n\r", bl_version, bl_version);
+      // printmsg("BL_DEBUG_MSG:BL_VER : %d %#x\n\r", bl_version, bl_version);
       HAL_Delay(1000);
       // jump to user application
       // bootloader_jump_to_user_app();
@@ -302,7 +314,74 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+void bootloader_uart_read_data(void)
+{
+  uint8_t rcv_len = 0;
 
+  while (1)
+  {
+    memset(bl_rx_buffer, 0, 200);
+    //here we will read and decode the commands coming from host
+    //first read only one byte from the host , which is the "length" field of the command packet
+    HAL_UART_Receive(C_UART, bl_rx_buffer, 1, HAL_MAX_DELAY);
+    rcv_len = bl_rx_buffer[0];
+    HAL_UART_Receive(C_UART, &bl_rx_buffer[1], rcv_len, HAL_MAX_DELAY);
+    switch (bl_rx_buffer[1])
+    {
+    case BL_GET_VER:
+      // bootloader_handle_getver_cmd(bl_rx_buffer);
+      printmsg("BL_DEBUG_MSG:bootloader_handle_getver_cmd\n\r");
+      break;
+    case BL_GET_HELP:
+      // bootloader_handle_gethelp_cmd(bl_rx_buffer);
+      printmsg("BL_DEBUG_MSG:bootloader_handle_gethelp_cmd\n\r");
+      break;
+    case BL_GET_CID:
+      // bootloader_handle_getcid_cmd(bl_rx_buffer);
+      printmsg("BL_DEBUG_MSG:bootloader_handle_getcid_cmd\n\r");
+      break;
+    case BL_GET_RDP_STATUS:
+      // bootloader_handle_getrdp_cmd(bl_rx_buffer);
+      printmsg("BL_DEBUG_MSG:bootloader_handle_getrdp_cmd\n\r");
+      break;
+    case BL_GO_TO_ADDR:
+      // bootloader_handle_go_cmd(bl_rx_buffer);
+      printmsg("BL_DEBUG_MSG:bootloader_handle_go_cmd\n\r");
+      break;
+    case BL_FLASH_ERASE:
+      // bootloader_handle_flash_erase_cmd(bl_rx_buffer);
+      printmsg("BL_DEBUG_MSG:bootloader_handle_flash_erase_cmd\n\r");
+      break;
+    case BL_MEM_WRITE:
+      // bootloader_handle_mem_write_cmd(bl_rx_buffer);
+      printmsg("BL_DEBUG_MSG:bootloader_handle_mem_write_cmd\n\r");
+      break;
+    case BL_EN_RW_PROTECT:
+      // bootloader_handle_en_rw_protect(bl_rx_buffer);
+      printmsg("BL_DEBUG_MSG:bootloader_handle_en_rw_protect\n\r");
+      break;
+    case BL_MEM_READ:
+      // bootloader_handle_mem_read(bl_rx_buffer);
+      printmsg("BL_DEBUG_MSG:bootloader_handle_mem_read\n\r");
+      break;
+    case BL_READ_SECTOR_P_STATUS:
+      // bootloader_handle_read_sector_protection_status(bl_rx_buffer);
+      printmsg("BL_DEBUG_MSG:bootloader_handle_read_sector_protection_status\n\r");
+      break;
+    case BL_OTP_READ:
+      // bootloader_handle_read_otp(bl_rx_buffer);
+      printmsg("BL_DEBUG_MSG:bootloader_handle_read_otp\n\r");
+      break;
+    case BL_DIS_R_W_PROTECT:
+      // bootloader_handle_dis_rw_protect(bl_rx_buffer);
+      printmsg("BL_DEBUG_MSG:bootloader_handle_dis_rw_protect\n\r");
+      break;
+    default:
+      printmsg("BL_DEBUG_MSG:Invalid command code received from host \n\r");
+      break;
+    }
+  }
+}
 /* USER CODE END 4 */
 
 /**
