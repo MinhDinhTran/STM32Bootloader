@@ -332,8 +332,7 @@ void bootloader_uart_read_data(void)
       bootloader_handle_getver_cmd(bl_rx_buffer);
       break;
     case BL_GET_HELP:
-      // bootloader_handle_gethelp_cmd(bl_rx_buffer);
-      printmsg("BL_DEBUG_MSG:bootloader_handle_gethelp_cmd\n\r");
+      bootloader_handle_gethelp_cmd(bl_rx_buffer);
       break;
     case BL_GET_CID:
       // bootloader_handle_getcid_cmd(bl_rx_buffer);
@@ -411,6 +410,33 @@ void bootloader_handle_getver_cmd(uint8_t *bl_rx_buffer)
     bootloader_send_nack();
   }
 }
+
+/*Helper function to handle BL_GET_HELP command
+ * Bootloader sends out All supported Command codes
+ */
+void bootloader_handle_gethelp_cmd(uint8_t *pBuffer)
+{
+  printmsg("BL_DEBUG_MSG:bootloader_handle_gethelp_cmd\n\r");
+
+  //Total length of the command packet
+  uint32_t command_packet_len = bl_rx_buffer[0] + 1;
+
+  //extract the CRC32 sent by the Host
+  uint32_t host_crc = *((uint32_t *)(bl_rx_buffer + command_packet_len - 4));
+
+  if (!bootloader_verify_crc(&bl_rx_buffer[0], command_packet_len - 4, host_crc))
+  {
+    printmsg("BL_DEBUG_MSG:checksum success !!\n\r");
+    bootloader_send_ack(pBuffer[0], sizeof(supported_commands));
+    bootloader_uart_write_data(supported_commands, sizeof(supported_commands));
+  }
+  else
+  {
+    printmsg("BL_DEBUG_MSG:checksum fail !!\n\r");
+    bootloader_send_nack();
+  }
+}
+
 /*This function sends ACK if CRC matches along with "len to follow"*/
 void bootloader_send_ack(uint8_t command_code, uint8_t follow_len)
 {
