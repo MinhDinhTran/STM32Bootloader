@@ -48,6 +48,7 @@
 #include <string.h>
 #include <stdint.h>
 #include "usbd_cdc.h"
+#include "flash_if.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -345,8 +346,7 @@ void bootloader_uart_read_data(void)
       bootloader_handle_go_cmd(bl_rx_buffer);
       break;
     case BL_FLASH_ERASE:
-      // bootloader_handle_flash_erase_cmd(bl_rx_buffer);
-      printmsg("BL_DEBUG_MSG:bootloader_handle_flash_erase_cmd\n\r");
+      bootloader_handle_flash_erase_cmd(bl_rx_buffer);
       break;
     case BL_MEM_WRITE:
       // bootloader_handle_mem_write_cmd(bl_rx_buffer);
@@ -439,7 +439,7 @@ void bootloader_handle_gethelp_cmd(uint8_t *pBuffer)
 void bootloader_handle_getcid_cmd(uint8_t *pBuffer)
 {
   uint16_t bl_cid_num = 0;
-  printmsg("BL_DEBUG_MSG:bootloader_handle_getcid_cmd\n");
+  printmsg("BL_DEBUG_MSG:bootloader_handle_getcid_cmd\n\r");
 
   //Total length of the command packet
   uint32_t command_packet_len = bl_rx_buffer[0] + 1;
@@ -449,15 +449,15 @@ void bootloader_handle_getcid_cmd(uint8_t *pBuffer)
 
   if (!bootloader_verify_crc(&bl_rx_buffer[0], command_packet_len - 4, host_crc))
   {
-    printmsg("BL_DEBUG_MSG:checksum success !!\n");
+    printmsg("BL_DEBUG_MSG:checksum success !!\n\r");
     bootloader_send_ack(pBuffer[0], 2);
     bl_cid_num = get_mcu_chip_id();
-    printmsg("BL_DEBUG_MSG:MCU id : %d %#x !!\n", bl_cid_num, bl_cid_num);
+    printmsg("BL_DEBUG_MSG:MCU id : %d %#x !!\n\r", bl_cid_num, bl_cid_num);
     bootloader_uart_write_data((uint8_t *)&bl_cid_num, 2);
   }
   else
   {
-    printmsg("BL_DEBUG_MSG:checksum fail !!\n");
+    printmsg("BL_DEBUG_MSG:checksum fail !!\n\r");
     bootloader_send_nack();
   }
 }
@@ -518,6 +518,39 @@ void bootloader_handle_go_cmd(uint8_t *pBuffer)
   else
   {
     printmsg("BL_DEBUG_MSG:checksum fail !!\n");
+    bootloader_send_nack();
+  }
+}
+
+/*Helper function to handle BL_FLASH_ERASE command */
+void bootloader_handle_flash_erase_cmd(uint8_t *pBuffer)
+{
+  uint8_t erase_status = 0x00;
+  printmsg("BL_DEBUG_MSG:bootloader_handle_flash_erase_cmd\n\r");
+
+  //Total length of the command packet
+  uint32_t command_packet_len = bl_rx_buffer[0] + 1;
+
+  //extract the CRC32 sent by the Host
+  uint32_t host_crc = *((uint32_t *)(bl_rx_buffer + command_packet_len - 4));
+
+  if (!bootloader_verify_crc(&bl_rx_buffer[0], command_packet_len - 4, host_crc))
+  {
+    printmsg("BL_DEBUG_MSG:checksum success !!\n\r");
+    bootloader_send_ack(pBuffer[0], 1);
+    printmsg("BL_DEBUG_MSG:initial_sector : %d  no_ofsectors: %d\n", pBuffer[2], pBuffer[3]);
+
+    HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, 1);
+    erase_status = execute_flash_erase();
+    HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, 0);
+
+    printmsg("BL_DEBUG_MSG: flash erase status: %#x\n\r", erase_status);
+
+    bootloader_uart_write_data(&erase_status, 1);
+  }
+  else
+  {
+    printmsg("BL_DEBUG_MSG:checksum fail !!\n\r");
     bootloader_send_nack();
   }
 }
@@ -610,7 +643,18 @@ uint8_t verify_address(uint32_t go_address)
   else
     return ADDR_INVALID;
 }
-
+uint8_t execute_flash_erase(void)
+{
+  //we have totally 8 sectors in STM32F446RE mcu .. sector[0 to 7]
+  //number_of_sector has to be in the range of 0 to 7
+  // if sector_number = 0xff , that means mass erase !
+  //Code needs to modified if your MCU supports more flash sectors
+  // FLASH_EraseInitTypeDef flashErase_handle;
+  uint8_t result;
+  // HAL_StatusTypeDef status;
+  result = FLASH_If_Erase(APPLICATION_ADDRESS);
+  return result;
+}
 /* USER CODE END 4 */
 
 /**
