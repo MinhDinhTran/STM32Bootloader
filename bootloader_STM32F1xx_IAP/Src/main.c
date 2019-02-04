@@ -70,9 +70,12 @@ UART_HandleTypeDef UartHandle;
 CRC_HandleTypeDef hcrc;
 
 UART_HandleTypeDef huart2;
+extern pFunction JumpToApplication;
+extern uint32_t JumpAddress;
 
 /* USER CODE BEGIN PV */
 uint8_t bl_version = 10;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -82,6 +85,7 @@ static void MX_CRC_Init(void);
 static void MX_USART2_UART_Init(void);
 /* USER CODE BEGIN PFP */
 static void printmsg(char *format, ...);
+// static void IAP_Init(void);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -139,10 +143,42 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_CRC_Init();
-  MX_USART2_UART_Init();
+  // MX_USART2_UART_Init();
   MX_USB_DEVICE_Init();
   /* USER CODE BEGIN 2 */
-
+  /* Lets check whether button is pressed or not, if not pressed jump to user application */
+  if (HAL_GPIO_ReadPin(B1_GPIO_Port, B1_Pin) == GPIO_PIN_RESET)
+  {
+    printmsg("BL_DEBUG_MSG:Button is pressed .. going to BL mode\n\r");
+    // HAL_Delay(1000);
+    /* Initialise Flash */
+    FLASH_If_Init();
+    /* Execute the IAP driver in order to reprogram the Flash */
+    // IAP_Init();
+    MX_USART2_UART_Init();
+    /* Display main menu */
+    Main_Menu();
+    //we should continue in bootloader mode
+    // bootloader_uart_read_data();
+  }
+  else
+  {
+    printmsg("BL_DEBUG_MSG:Button is not pressed .. executing user app\n\r");
+    // printmsg("BL_DEBUG_MSG:BL_VER : %d %#x\n\r", bl_version, bl_version);
+    // HAL_Delay(1000);
+    // jump to user application
+    // bootloader_jump_to_user_app();
+    /* Test if user code is programmed starting from address "APPLICATION_ADDRESS" */
+    if (((*(__IO uint32_t *)APPLICATION_ADDRESS) & 0x2FFE0000) == 0x20000000)
+    {
+      /* Jump to user application */
+      JumpAddress = *(__IO uint32_t *)(APPLICATION_ADDRESS + 4);
+      JumpToApplication = (pFunction)JumpAddress;
+      /* Initialize user application's Stack Pointer */
+      __set_MSP(*(__IO uint32_t *)APPLICATION_ADDRESS);
+      JumpToApplication();
+    }
+  }
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -152,23 +188,6 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-    /* Lets check whether button is pressed or not, if not pressed jump to user application */
-    if (HAL_GPIO_ReadPin(B1_GPIO_Port, B1_Pin) == GPIO_PIN_RESET)
-    {
-      printmsg("BL_DEBUG_MSG:Button is pressed .. going to BL mode\n\r");
-      HAL_Delay(1000);
-
-      //we should continue in bootloader mode
-      // bootloader_uart_read_data();
-    }
-    else
-    {
-      printmsg("BL_DEBUG_MSG:Button is not pressed .. executing user app\n\r");
-      printmsg("BL_DEBUG_MSG:BL_VER : %d %#x\n\r", bl_version, bl_version);
-      HAL_Delay(1000);
-      // jump to user application
-      // bootloader_jump_to_user_app();
-    }
   }
   /* USER CODE END 3 */
 }

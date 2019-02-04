@@ -545,7 +545,7 @@
             <File>
               <FileName>system_stm32f1xx.c</FileName>
               <FileType>1</FileType>
-              <FilePath>../Src/system_stm32f1xx.c</FilePath>
+              <FilePath>..\Src\system_stm32f1xx.c</FilePath>
             </File>
           </Files>
         </Group>
