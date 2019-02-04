@@ -85,7 +85,7 @@ static void MX_CRC_Init(void);
 static void MX_USART2_UART_Init(void);
 /* USER CODE BEGIN PFP */
 static void printmsg(char *format, ...);
-// static void IAP_Init(void);
+static void IAP_Init(void);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -154,8 +154,8 @@ int main(void)
     /* Initialise Flash */
     FLASH_If_Init();
     /* Execute the IAP driver in order to reprogram the Flash */
-    // IAP_Init();
-    MX_USART2_UART_Init();
+    IAP_Init();
+    // MX_USART2_UART_Init();
     /* Display main menu */
     Main_Menu();
     //we should continue in bootloader mode
@@ -322,7 +322,37 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-
+/**
+  * @brief  Initialize the IAP: Configure USART.
+  * @param  None
+  * @retval None
+  */
+void IAP_Init(void)
+{
+  /* USART resources configuration (Clock, GPIO pins and USART registers) ----*/
+  /* USART configured as follow:
+        - BaudRate = 115200 baud  
+        - Word Length = 8 Bits
+        - One Stop Bit
+        - No parity
+        - Hardware flow control disabled (RTS and CTS signals)
+        - Receive and transmit enabled
+  */
+  UartHandle.Instance = USART2;
+  UartHandle.Init.BaudRate = 115200;
+  UartHandle.Init.WordLength = UART_WORDLENGTH_8B;
+  UartHandle.Init.StopBits = UART_STOPBITS_1;
+  UartHandle.Init.Parity = UART_PARITY_NONE;
+  UartHandle.Init.Mode = UART_MODE_TX_RX;
+  UartHandle.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  UartHandle.Init.OverSampling = UART_OVERSAMPLING_16;
+  // BSP_COM_Init(COM1, &UartHandle);
+  // HAL_UART_Init(huart);
+  if (HAL_UART_Init(&UartHandle) != HAL_OK)
+  {
+    Error_Handler();
+  }
+}
 /* USER CODE END 4 */
 
 /**
