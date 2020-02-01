@@ -3,8 +3,8 @@
  * Auto generated Run-Time-Environment Configuration File
  *      *** Do not modify ! ***
  *
- * Project: 'STM32F103C8_Temp' 
- * Target:  'STM32F103C8_Temp' 
+ * Project: 'Template' 
+ * Target:  'Template' 
  */
 
 #ifndef RTE_COMPONENTS_H
